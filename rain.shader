@@ -57,11 +57,14 @@ void fragment()
 	lowp float time = TIME*Rain_speed;
 	lowp float is_it_raining = smoothstep(0.01,0.01,Rain_amount); //if no rain - no paddles
 	lowp vec4 puddles = calc_puddles(edge_mask(time,uv_rain),edge_mask(time+0.5,uv_rain.yx),uv_rain);
-	puddles*=smoothstep(0.7,.9,smoothstep(0.0,1.0,weights.y));//puddles only on top 
+	//lowp float on_top = smoothstep(0.7,0.9,smoothstep(0.0,1.0,weights.y));//on top value
+	puddles*=smoothstep(0.8,1.0,smoothstep(0.0,1.0,weights.y));//puddles only on top 
 	puddles*= is_it_raining;//if no rain - no paddles
 	lowp float metalic = texture(Material_Metal, uv_mat).x;
 	lowp float streaks = (texture(addition_tex, uv_streaks).g);
 	streaks*=is_it_raining;//if no rain - no streaks
+	streaks*=1.0-smoothstep(0.97,1.0,smoothstep(0.0,1.0,weights.y));// no streaks on top
+	
 	streaks*= clamp(texture(addition_tex, vec2(uv_streaks.x,uv_streaks.y+time*Rain_speed*0.15)).b-0.5,0.0,1.0);//gradient fall
 	streaks = smoothstep(0.0,0.1,streaks);
 	lowp float under_roof = smoothstep(-0.3,0.0,weights.y);// normal looks down, the rain doesn't flow.
