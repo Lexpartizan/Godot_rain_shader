@@ -12,9 +12,9 @@ background_sky = SubResource( 1 )
 
 [sub_resource type="CubeMesh" id=3]
 
-[sub_resource type="SphereMesh" id=6]
+[sub_resource type="SphereMesh" id=4]
 
-[sub_resource type="PlaneMesh" id=7]
+[sub_resource type="PlaneMesh" id=5]
 
 [node name="Spatial" type="Spatial"]
 
@@ -22,18 +22,18 @@ background_sky = SubResource( 1 )
 environment = SubResource( 2 )
 
 [node name="MeshInstance" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.135023, 0, 0 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.128828, -0.024983, 0.0470195 )
 mesh = SubResource( 3 )
 material/0 = ExtResource( 2 )
 
 [node name="MeshInstance3" type="MeshInstance" parent="."]
 transform = Transform( 0.998218, 0, 0.0596722, 0, 1, 0, -0.0596722, 0, 0.998218, -2.19279, 0, 0.0895054 )
-mesh = SubResource( 6 )
+mesh = SubResource( 4 )
 material/0 = ExtResource( 2 )
 
 [node name="MeshInstance2" type="MeshInstance" parent="."]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 2.55812, 0, 0 )
-mesh = SubResource( 7 )
+mesh = SubResource( 5 )
 material/0 = ExtResource( 2 )
 
 [node name="DirectionalLight" type="DirectionalLight" parent="."]
