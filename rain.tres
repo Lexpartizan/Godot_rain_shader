@@ -1,0 +1,23 @@
+[gd_resource type="ShaderMaterial" load_steps=9 format=2]
+
+[ext_resource path="res://streaks_normal.jpg" type="Texture" id=1]
+[ext_resource path="res://clay-shingles1_roughness.png" type="Texture" id=2]
+[ext_resource path="res://puddles_normal.jpg" type="Texture" id=3]
+[ext_resource path="res://clay-shingles1_normal-ogl.png" type="Texture" id=4]
+[ext_resource path="res://clay-shingles1_metallic.png" type="Texture" id=5]
+[ext_resource path="res://addition_texture.jpg" type="Texture" id=6]
+[ext_resource path="res://clay-shingles1_albedo.png" type="Texture" id=7]
+[ext_resource path="res://rain.shader" type="Shader" id=8]
+
+[resource]
+shader = ExtResource( 8 )
+shader_param/Rain_amount = 1.0
+shader_param/scale_UV_rain = 3.0
+shader_param/scale_UV_material = 1.0
+shader_param/addition_tex = ExtResource( 6 )
+shader_param/puddles_normal_tex = ExtResource( 3 )
+shader_param/streaks_normal_tex = ExtResource( 1 )
+shader_param/Material_Albedo = ExtResource( 7 )
+shader_param/Material_Norm = ExtResource( 4 )
+shader_param/Material_Rough = ExtResource( 2 )
+shader_param/Material_Metal = ExtResource( 5 )
