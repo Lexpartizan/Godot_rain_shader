@@ -84,8 +84,7 @@ lowp vec4 get_drops(lowp float time,)
 	lowp vec2 uv_streaks = triplanar_uv_rain*0.3;
 	streaks = texture(streaks_tex, uv_streaks);
 	streaks.a*=1.0-step(0.9,weights.y);
-	
-	streaks.a*= clamp(texture(addition_tex, vec2(uv_streaks.x,uv_streaks.y+time*0.2)).b-0.65,0.0,1.0);//gradient fall
+	streaks.a*= clamp(texture(addition_tex, vec2(uv_streaks.x,uv_streaks.y+time*0.2)).b-0.5,0.0,1.0);//gradient fall
 	streaks.a = smoothstep(0.0,0.2,streaks.a);//Strengthening streaks to 1.0
 	drops = mix (drops,streaks,streaks.a);
 	return drops;
@@ -163,7 +162,7 @@ void fragment()
 	ALBEDO = mix(dry_albedo,wet_albedo,under_rain);
 	
 	float metalness = mix(dry_metalic,0.0,drops.a);
-	metalness = mix(dry_metalic,1.0,puddles.a);
+	//metalness = mix(dry_metalic,1.0,puddles.a);
 	METALLIC = metalness;
 	norm = mix(norm,texture(Snow_Norm,triplanar_uv_snow).rgb,snow_fill_normals);
 	//norm = mix(norm,vec3(0.5,0.5,1.0),snow_fill_normals);
