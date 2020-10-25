@@ -1,64 +1,64 @@
 [gd_scene load_steps=14 format=2]
 
+[ext_resource path="res://chinese_garden_1k.jpg" type="Texture" id=1]
 [ext_resource path="res://rain.tres" type="Material" id=2]
 [ext_resource path="res://depth_buffer.shader" type="Shader" id=3]
 [ext_resource path="res://TexturesCom_Snow_Fresh_1K_normal.png" type="Texture" id=4]
-[ext_resource path="res://chinese_garden_1k.jpg" type="Texture" id=5]
 
-[sub_resource type="PanoramaSky" id=1]
-panorama = ExtResource( 5 )
+[sub_resource type="CubeMesh" id=1]
 
-[sub_resource type="Environment" id=2]
-background_mode = 2
-background_sky = SubResource( 1 )
-ambient_light_energy = 2.93
+[sub_resource type="SphereMesh" id=2]
 
-[sub_resource type="CubeMesh" id=3]
+[sub_resource type="PlaneMesh" id=3]
 
-[sub_resource type="SphereMesh" id=4]
-
-[sub_resource type="PlaneMesh" id=5]
-
-[sub_resource type="ShaderMaterial" id=6]
+[sub_resource type="ShaderMaterial" id=4]
 shader = ExtResource( 3 )
 
-[sub_resource type="QuadMesh" id=7]
-material = SubResource( 6 )
+[sub_resource type="QuadMesh" id=5]
+material = SubResource( 4 )
 size = Vector2( 2, 2 )
 
-[sub_resource type="SphereMesh" id=8]
+[sub_resource type="SphereMesh" id=6]
 
-[sub_resource type="SpatialMaterial" id=9]
+[sub_resource type="SpatialMaterial" id=7]
 normal_enabled = true
 normal_scale = 1.0
 normal_texture = ExtResource( 4 )
 
-[node name="Spatial" type="Spatial"]
+[sub_resource type="PanoramaSky" id=8]
+panorama = ExtResource( 1 )
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource( 2 )
+[sub_resource type="Environment" id=9]
+background_mode = 2
+background_sky = SubResource( 8 )
+background_energy = 5.0
+
+[node name="Spatial" type="Spatial"]
 
 [node name="MeshInstance" type="MeshInstance" parent="."]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4957, -0.024983, 0.0470195 )
-mesh = SubResource( 3 )
+mesh = SubResource( 1 )
 material/0 = ExtResource( 2 )
 
 [node name="MeshInstance3" type="MeshInstance" parent="."]
-transform = Transform( 0.997986, 0.0215531, 0.0596583, -0.0215147, 0.999768, -0.00128612, -0.0596722, 0, 0.998218, -2.16443, 0, -0.12516 )
-mesh = SubResource( 4 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.16443, 0, -0.12516 )
+mesh = SubResource( 2 )
 material/0 = ExtResource( 2 )
 
 [node name="MeshInstance2" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 3.85579, 0, 0 )
-mesh = SubResource( 5 )
+transform = Transform( 1, 0, 0, 0, 0.999912, -0.0132642, 0, 0.0132642, 0.999912, 3.52, 0, 0.003 )
+mesh = SubResource( 3 )
 material/0 = ExtResource( 2 )
 
 [node name="MeshInstance4" type="MeshInstance" parent="."]
 transform = Transform( 0.839781, 0, -0.542925, 0, 1, 0, 0.542925, 0, 0.839781, -2.66789, 0.784456, 5.16028 )
-mesh = SubResource( 7 )
+mesh = SubResource( 5 )
 material/0 = null
 
 [node name="MeshInstance5" type="MeshInstance" parent="."]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 9.56611, 0, 0 )
-mesh = SubResource( 8 )
-material/0 = SubResource( 9 )
+mesh = SubResource( 6 )
+material/0 = SubResource( 7 )
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource( 9 )
