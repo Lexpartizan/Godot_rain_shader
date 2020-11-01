@@ -1,10 +1,8 @@
-[gd_scene load_steps=19 format=2]
+[gd_scene load_steps=17 format=2]
 
 [ext_resource path="res://chinese_garden_1k.jpg" type="Texture" id=1]
 [ext_resource path="res://rain.tres" type="Material" id=2]
 [ext_resource path="res://depth_buffer.shader" type="Shader" id=3]
-[ext_resource path="res://tavria/.mesh" type="ArrayMesh" id=4]
-[ext_resource path="res://drops.png" type="Texture" id=5]
 
 [sub_resource type="CubeMesh" id=1]
 
@@ -86,7 +84,6 @@ shader_param/uv1_scale = Vector3( 1, 1, 1 )
 shader_param/uv1_offset = Vector3( 0, 0, 0 )
 shader_param/uv2_scale = Vector3( 1, 1, 1 )
 shader_param/uv2_offset = Vector3( 0, 0, 0 )
-shader_param/texture_albedo = ExtResource( 5 )
 
 [sub_resource type="SphereMesh" id=9]
 
@@ -146,7 +143,6 @@ shader_param/uv1_scale = Vector3( 1, 1, 1 )
 shader_param/uv1_offset = Vector3( 0, 0, 0 )
 shader_param/uv2_scale = Vector3( 1, 1, 1 )
 shader_param/uv2_offset = Vector3( 0, 0, 0 )
-shader_param/texture_albedo = ExtResource( 5 )
 
 [sub_resource type="PanoramaSky" id=12]
 panorama = ExtResource( 1 )
@@ -180,8 +176,6 @@ material/0 = null
 
 [node name="MeshInstance5" type="MeshInstance" parent="."]
 transform = Transform( 0.997541, -1.14187e-08, 0.0700873, -0.0700873, -1.6252e-07, 0.997541, 0, -1, -1.62921e-07, 4.8331, 0, 0 )
-mesh = ExtResource( 4 )
-material/0 = ExtResource( 2 )
 
 [node name="MeshInstance6" type="MeshInstance" parent="."]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -5.56901, 0, 1.12986 )
