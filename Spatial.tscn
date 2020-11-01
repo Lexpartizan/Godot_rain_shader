@@ -1,9 +1,10 @@
-[gd_scene load_steps=14 format=2]
+[gd_scene load_steps=19 format=2]
 
 [ext_resource path="res://chinese_garden_1k.jpg" type="Texture" id=1]
 [ext_resource path="res://rain.tres" type="Material" id=2]
 [ext_resource path="res://depth_buffer.shader" type="Shader" id=3]
-[ext_resource path="res://TexturesCom_Snow_Fresh_1K_normal.png" type="Texture" id=4]
+[ext_resource path="res://tavria/.mesh" type="ArrayMesh" id=4]
+[ext_resource path="res://drops.png" type="Texture" id=5]
 
 [sub_resource type="CubeMesh" id=1]
 
@@ -20,33 +21,155 @@ size = Vector2( 2, 2 )
 
 [sub_resource type="SphereMesh" id=6]
 
-[sub_resource type="SpatialMaterial" id=7]
-normal_enabled = true
-normal_scale = 1.0
-normal_texture = ExtResource( 4 )
+[sub_resource type="Shader" id=7]
+code = "shader_type spatial;
+render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx;
+uniform vec4 albedo : hint_color;
+uniform sampler2D texture_albedo : hint_albedo;
+uniform float specular;
+uniform float metallic;
+uniform float roughness : hint_range(0,1);
+uniform float point_size : hint_range(0,128);
+varying vec3 uv1_triplanar_pos;
+uniform float uv1_blend_sharpness;
+varying vec3 uv1_power_normal;
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
 
-[sub_resource type="PanoramaSky" id=8]
+
+void vertex() {
+	uv1_power_normal=pow(abs(NORMAL),vec3(uv1_blend_sharpness));
+	uv1_power_normal/=dot(uv1_power_normal,vec3(1.0));
+	uv1_triplanar_pos = VERTEX * uv1_scale + uv1_offset;
+	uv1_triplanar_pos *= vec3(1.0,-1.0, 1.0);
+}
+
+
+vec4 triplanar_texture(sampler2D p_sampler,vec3 p_weights,vec3 p_triplanar_pos) {
+	vec4 samp=vec4(0.0);
+	samp+= texture(p_sampler,p_triplanar_pos.xy) * p_weights.z;
+	samp+= texture(p_sampler,p_triplanar_pos.xz) * p_weights.y;
+	samp+= texture(p_sampler,p_triplanar_pos.zy * vec2(-1.0,1.0)) * p_weights.x;
+	return samp;
+}
+
+
+void fragment() {
+	lowp vec3 pos = mat3(WORLD_MATRIX)*VERTEX;
+	lowp vec3 weights = mat3(WORLD_MATRIX)*NORMAL;// weights*=weights;
+	lowp vec3 mask = abs(weights);
+	lowp vec2 triplanar_uv_rain;
+	lowp float branchless = step(mask.x,mask.z);
+	triplanar_uv_rain = pos.xy*branchless+pos.zy*(1.0-branchless);//branchless primitive triplanar proj
+	branchless = step(mask.x,mask.y)*step(mask.z,mask.y);
+	triplanar_uv_rain = triplanar_uv_rain*(1.0-branchless)+pos.xz*branchless;//
+	
+	vec4 albedo_tex = texture(texture_albedo,triplanar_uv_rain);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+	METALLIC = metallic;
+	ROUGHNESS = roughness;
+	SPECULAR = specular;
+}
+"
+
+[sub_resource type="ShaderMaterial" id=8]
+shader = SubResource( 7 )
+shader_param/albedo = Color( 1, 1, 1, 1 )
+shader_param/specular = 0.5
+shader_param/metallic = 0.0
+shader_param/roughness = 1.0
+shader_param/point_size = 1.0
+shader_param/uv1_blend_sharpness = 64.0
+shader_param/uv1_scale = Vector3( 1, 1, 1 )
+shader_param/uv1_offset = Vector3( 0, 0, 0 )
+shader_param/uv2_scale = Vector3( 1, 1, 1 )
+shader_param/uv2_offset = Vector3( 0, 0, 0 )
+shader_param/texture_albedo = ExtResource( 5 )
+
+[sub_resource type="SphereMesh" id=9]
+
+[sub_resource type="Shader" id=10]
+code = "shader_type spatial;
+render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx,world_vertex_coords;
+uniform vec4 albedo : hint_color;
+uniform sampler2D texture_albedo : hint_albedo;
+uniform float specular;
+uniform float metallic;
+uniform float roughness : hint_range(0,1);
+uniform float point_size : hint_range(0,128);
+varying vec3 uv1_triplanar_pos;
+uniform float uv1_blend_sharpness;
+varying vec3 uv1_power_normal;
+uniform vec3 uv1_scale;
+uniform vec3 uv1_offset;
+uniform vec3 uv2_scale;
+uniform vec3 uv2_offset;
+
+
+void vertex() {
+	uv1_power_normal=pow(abs(NORMAL),vec3(uv1_blend_sharpness));
+	uv1_power_normal/=dot(uv1_power_normal,vec3(1.0));
+	uv1_triplanar_pos = VERTEX * uv1_scale + uv1_offset;
+	uv1_triplanar_pos *= vec3(1.0,-1.0, 1.0);
+}
+
+
+vec4 triplanar_texture(sampler2D p_sampler,vec3 p_weights,vec3 p_triplanar_pos) {
+	vec4 samp=vec4(0.0);
+	samp+= texture(p_sampler,p_triplanar_pos.xy) * p_weights.z;
+	samp+= texture(p_sampler,p_triplanar_pos.xz) * p_weights.y;
+	samp+= texture(p_sampler,p_triplanar_pos.zy * vec2(-1.0,1.0)) * p_weights.x;
+	return samp;
+}
+
+
+void fragment() {
+	vec4 albedo_tex = triplanar_texture(texture_albedo,uv1_power_normal,uv1_triplanar_pos);
+	ALBEDO = albedo.rgb * albedo_tex.rgb;
+	METALLIC = metallic;
+	ROUGHNESS = roughness;
+	SPECULAR = specular;
+}
+"
+
+[sub_resource type="ShaderMaterial" id=11]
+shader = SubResource( 10 )
+shader_param/albedo = Color( 1, 1, 1, 1 )
+shader_param/specular = 0.5
+shader_param/metallic = 0.0
+shader_param/roughness = 1.0
+shader_param/point_size = 1.0
+shader_param/uv1_blend_sharpness = 42.2243
+shader_param/uv1_scale = Vector3( 1, 1, 1 )
+shader_param/uv1_offset = Vector3( 0, 0, 0 )
+shader_param/uv2_scale = Vector3( 1, 1, 1 )
+shader_param/uv2_offset = Vector3( 0, 0, 0 )
+shader_param/texture_albedo = ExtResource( 5 )
+
+[sub_resource type="PanoramaSky" id=12]
 panorama = ExtResource( 1 )
 
-[sub_resource type="Environment" id=9]
+[sub_resource type="Environment" id=13]
 background_mode = 2
-background_sky = SubResource( 8 )
+background_sky = SubResource( 12 )
 background_energy = 5.0
 
 [node name="Spatial" type="Spatial"]
 
 [node name="MeshInstance" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4957, -0.024983, 0.0470195 )
+transform = Transform( 0.999482, 0.0321958, 0, -0.0321958, 0.999482, 0, 0, 0, 1, 1.05317, -0.0249829, 0.0517763 )
 mesh = SubResource( 1 )
 material/0 = ExtResource( 2 )
 
 [node name="MeshInstance3" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.16443, 0, -0.12516 )
+transform = Transform( 0.909832, -0.0206752, -0.414461, 0.0243092, 0.999698, 0.00349431, 0.414263, -0.0132544, 0.910061, -2.09705, 0, -0.12516 )
 mesh = SubResource( 2 )
 material/0 = ExtResource( 2 )
 
 [node name="MeshInstance2" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 0.999912, -0.0132642, 0, 0.0132642, 0.999912, 3.52, 0, 0.003 )
+transform = Transform( 1, 0, 0, 0, 0.999347, -0.0361205, 0, 0.0361205, 0.999347, 3.7157, 0, 0.003 )
 mesh = SubResource( 3 )
 material/0 = ExtResource( 2 )
 
@@ -56,9 +179,19 @@ mesh = SubResource( 5 )
 material/0 = null
 
 [node name="MeshInstance5" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 9.56611, 0, 0 )
+transform = Transform( 0.997541, -1.14187e-08, 0.0700873, -0.0700873, -1.6252e-07, 0.997541, 0, -1, -1.62921e-07, 4.8331, 0, 0 )
+mesh = ExtResource( 4 )
+material/0 = ExtResource( 2 )
+
+[node name="MeshInstance6" type="MeshInstance" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -5.56901, 0, 1.12986 )
 mesh = SubResource( 6 )
-material/0 = SubResource( 7 )
+material/0 = SubResource( 8 )
+
+[node name="MeshInstance7" type="MeshInstance" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -4.4108, 0, 0 )
+mesh = SubResource( 9 )
+material/0 = SubResource( 11 )
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource( 9 )
+environment = SubResource( 13 )
