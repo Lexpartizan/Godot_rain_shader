@@ -14,11 +14,11 @@
 shader = ExtResource( 8 )
 shader_param/scale_UV_material = 3.0
 shader_param/scale_UV_rain = 5.0
-shader_param/rain_amount = 0.0
-shader_param/wet_level = 0.0
+shader_param/rain_amount = 0.817
+shader_param/wet_level = 1.0
 shader_param/streaks_length = 0.5
 shader_param/streaks_angle = 0.8
-shader_param/snow_amount = 1.0
+shader_param/snow_amount = 0.0
 shader_param/without_snow_angle = 0.3
 shader_param/snow_brightness = 0.5
 shader_param/Material_Albedo = ExtResource( 5 )
