@@ -15,6 +15,7 @@ uniform lowp float scale_UV_rain: hint_range(0.0,100.0);
 
 uniform lowp float rain_amount: hint_range(0.0,1.0);
 uniform lowp float wet_level: hint_range(0.0,1.0);
+uniform lowp float water_metallnes: hint_range(0.0,1.0) =0.0;
 uniform lowp float streaks_length: hint_range(0.0,1.0) = 0.5;
 uniform lowp float streaks_angle: hint_range(0.0,1.0) = 0.8;
 uniform lowp float snow_amount: hint_range(0.0,1.0);
@@ -100,14 +101,14 @@ lowp vec4 get_puddles_and_ripples(lowp vec3 puddles_normal, lowp vec2 uv)
 	//puddles.a = texture(noise_tex,world_pos.xz*0.01).r;
 	//puddles.a =smoothstep(1.0-puddles_amount,1.0,puddles.a);
 	
-	puddles.a = 1.0-smoothstep(puddles_amount*0.3,(puddles_amount)*0.4,texture(noise_tex,world_pos.xz*.5).r);
+	puddles.a = 1.0-smoothstep(puddles_amount*0.3,(puddles_amount)*0.4,texture(noise_tex,world_pos.xz*scale_UV_rain*0.1).r);
 		
 	puddles.a*=puddles_amount;
-	lowp vec2 ripples_uv = uv*0.3;
+	lowp vec2 ripples_uv = uv*0.2;
 	lowp vec4 ripples_tex_color_1 = texture(ripples_tex,ripples_uv);
-	lowp vec4 ripples_tex_color_2 = texture(ripples_tex,ripples_uv+0.25);
-	lowp vec4 ripples_tex_color_3 = texture(ripples_tex,ripples_uv+0.5);
-	lowp vec4 ripples_tex_color_4 = texture(ripples_tex,ripples_uv+0.75);
+	lowp vec4 ripples_tex_color_2 = texture(ripples_tex,ripples_uv*vec2(1.0,-1.0));
+	lowp vec4 ripples_tex_color_3 = texture(ripples_tex,ripples_uv*vec2(-1.0,1.0));
+	lowp vec4 ripples_tex_color_4 = texture(ripples_tex,ripples_uv*vec2(-1.0,-1.0));
 	
 	lowp vec4 ripples1;lowp vec4 ripples2;lowp vec4 ripples3;lowp vec4 ripples4;
 	ripples1 = vec4(ripples_tex_color_1.r,ripples_tex_color_1.g,1.0,ripples_tex_color_1.a);
@@ -119,10 +120,10 @@ lowp vec4 get_puddles_and_ripples(lowp vec3 puddles_normal, lowp vec2 uv)
 	lowp float time_ripples_3 = fract(time*0.5+0.5+(ripples_tex_color_3.b*2.0 - 1.0));
 	lowp float time_ripples_4 = fract(time*0.5+0.75+(ripples_tex_color_4.b*2.0 - 1.0));
 	lowp float nums_of_waves = 3.0;
-	ripples1.a = smoothstep(0.0,0.8,sin(clamp((time_ripples_1-1.0+ripples1.a)*10.0,0.0,nums_of_waves)*6.28)*(1.0-time_ripples_1));
-	ripples2.a = smoothstep(0.0,0.8,sin(clamp((time_ripples_2-1.0+ripples2.a)*10.0,0.0,nums_of_waves)*6.28)*(1.0-time_ripples_2));
-	ripples3.a = smoothstep(0.0,0.8,sin(clamp((time_ripples_3-1.0+ripples3.a)*10.0,0.0,nums_of_waves)*6.28)*(1.0-time_ripples_3));
-	ripples4.a = smoothstep(0.0,0.8,sin(clamp((time_ripples_4-1.0+ripples4.a)*10.0,0.0,nums_of_waves)*6.28)*(1.0-time_ripples_4));
+	ripples1.a = smoothstep(0.0,0.8,sin(clamp((time_ripples_1-1.0+ripples1.a)*20.0,0.0,nums_of_waves)*6.28)*(1.0-time_ripples_1));
+	ripples2.a = smoothstep(0.0,0.8,sin(clamp((time_ripples_2-1.0+ripples2.a)*20.0,0.0,nums_of_waves)*6.28)*(1.0-time_ripples_2));
+	ripples3.a = smoothstep(0.0,0.8,sin(clamp((time_ripples_3-1.0+ripples3.a)*20.0,0.0,nums_of_waves)*6.28)*(1.0-time_ripples_3));
+	ripples4.a = smoothstep(0.0,0.8,sin(clamp((time_ripples_4-1.0+ripples4.a)*20.0,0.0,nums_of_waves)*6.28)*(1.0-time_ripples_4));
 	ripples1 = mix(ripples1,ripples2,ripples2.a);
 	ripples1 = mix(ripples1,ripples3,ripples3.a);
 	ripples1 = mix(ripples1,ripples4,ripples4.a);
@@ -154,8 +155,8 @@ void fragment()
 	triplanar_uv_rain = triplanar_uv_rain*(1.0-branchless)+pos.xz*branchless;//
 	
 	triplanar_uv_rain*=scale_UV_rain;
-	triplanar_uv_streaks*=scale_UV_rain*0.3;
-	triplanar_uv_snow = pos.xz*scale_UV_rain*0.5;
+	triplanar_uv_streaks*=scale_UV_rain*0.2;
+	triplanar_uv_snow = pos.xz*scale_UV_rain*0.1;
 	//uv calculating is done. i want do this in vertex, but get some artefacts on the borders of projections. Sad.
 	
 	lowp vec2 uv_mat = UV*scale_UV_material;
@@ -190,10 +191,11 @@ void fragment()
 	//wet albedo code ends
 	lowp vec3 wet_albedo =saturation(1.0+wetness,dry_albedo);
 	wet_albedo = wet_albedo*mix(1.0,factor,wetness);
+	wet_albedo = mix(dry_albedo,wet_albedo,under_rain);
 	ALBEDO = mix(dry_albedo,wet_albedo,wetness);
 
-	float metalness = mix(dry_metalic,0.0,drops.a);
-	metalness = mix(dry_metalic,0.0,puddles.a);
+	float metalness = mix(dry_metalic,water_metallnes,drops.a);
+	metalness = mix(dry_metalic,water_metallnes,puddles.a);
 	METALLIC = metalness;
 	
 	norm = mix(norm,drops.rgb,drops.a);
