@@ -1,6 +1,6 @@
 [gd_scene load_steps=17 format=2]
 
-[ext_resource path="res://chinese_garden_1k.jpg" type="Texture" id=1]
+[ext_resource path="res://bethnal_green_entrance_2k.hdr" type="Texture" id=1]
 [ext_resource path="res://rain.tres" type="Material" id=2]
 [ext_resource path="res://depth_buffer.shader" type="Shader" id=3]
 
@@ -150,7 +150,6 @@ panorama = ExtResource( 1 )
 [sub_resource type="Environment" id=13]
 background_mode = 2
 background_sky = SubResource( 12 )
-background_energy = 5.0
 
 [node name="Spatial" type="Spatial"]
 
