@@ -13,20 +13,27 @@ uniform lowp sampler2D Material_Metal: hint_black;
 uniform lowp float scale_UV_material:hint_range(0.0,10.0);
 uniform lowp float scale_UV_rain: hint_range(0.0,100.0);
 
-uniform lowp float rain_amount: hint_range(0.0,1.0);
+uniform lowp bool rain;//it rains?
+
 uniform lowp float wet_level: hint_range(0.0,1.0);
 uniform lowp float water_metallnes: hint_range(0.0,1.0) =0.0;
+uniform lowp float dry_angle: hint_range(-1.0,1.0) = -0.1; //angle dry surface, normals look down
+uniform lowp bool puddles_noise; // if you want use yours texture for puddles check off this. if you dont want puddles, of this option and leave puddles_tex empty;
+uniform lowp sampler2D puddles_tex: hint_black;
 uniform lowp float streaks_length: hint_range(0.0,1.0) = 0.5;
-uniform lowp float streaks_angle: hint_range(0.0,1.0) = 0.8;
+uniform lowp float streaks_angle: hint_range(0.0,1.0) = 0.8; //angle start streaks
+
+
 uniform lowp float snow_amount: hint_range(0.0,1.0);
-uniform lowp float without_snow_angle: hint_range(0.0,1.0) = 0.3;
+uniform lowp float without_snow_angle: hint_range(0.0,1.0) = 0.3; //angle for stop snow
 uniform lowp float snow_brightness:hint_range(0.0,1.0);
 
 uniform lowp sampler2D noise_tex;
 uniform lowp sampler2D drops_tex; //normal.rg+timeshift+alpha
 uniform lowp sampler2D ripples_tex; //normal.rg+timeshift+alpha
 uniform lowp sampler2D streaks_tex; //normal.rg+timeshift+alpha
-uniform lowp sampler2D Snow_Norm: hint_normal;
+uniform lowp sampler2D snow_norm: hint_normal;
+
 //uniform lowp sampler2D Snow_Rough: hint_white;
 //varying lowp vec3 world_up;
 varying lowp vec3 pos;
@@ -49,14 +56,13 @@ void vertex()
 {
 	//world_up = mat3(WORLD_MATRIX)*vec3(0.0,1.0,0.0);
 	pos = VERTEX;//this fits for simple triplanar
-	
 	world_pos = ((WORLD_MATRIX)*vec4(VERTEX,1.0)).xyz;// for triplanar puddles
 	weights = mat3(WORLD_MATRIX)*NORMAL;// weights*=weights;
 	mask = abs(weights);
 	
 	time = TIME*1.5;
-	raining = step(0.01,rain_amount);// rain_amount not 0.0;
-	under_rain = smoothstep(-0.1,0.0,weights.y);// normal looks down, the rain doesn't flow. 0.0 - under roof,1.0 - under rain 
+	raining = float(rain);// rain_amount not 0.0;
+	under_rain = smoothstep(dry_angle,0.0,weights.y);// normal looks down, the rain doesn't flow. 0.0 - under roof,1.0 - under rain 
 	snow_distribution = smoothstep(without_snow_angle,1.0,weights.y);
 	start_streaks_angle = 1.0-step(streaks_angle,weights.y);
 	puddles_plain =step(0.999,weights.y);//puddles only on top;
@@ -94,17 +100,15 @@ lowp vec4 get_drops_and_streaks(lowp vec2 drops_uv, lowp vec2 streaks_uv)
 	return drops;
 }
 
-lowp vec4 get_puddles_and_ripples(lowp vec3 puddles_normal, lowp vec2 uv)
+lowp vec4 get_puddles_and_ripples(lowp vec3 puddles_normal, lowp vec2 uv, lowp vec2 uv_mat)
 {
 	lowp vec4 puddles;
 	puddles.rgb =puddles_normal;
-	//puddles.a = texture(noise_tex,world_pos.xz*0.01).r;
-	//puddles.a =smoothstep(1.0-puddles_amount,1.0,puddles.a);
-	
-	puddles.a = 1.0-smoothstep(puddles_amount*0.3,(puddles_amount)*0.4,texture(noise_tex,world_pos.xz*scale_UV_rain*0.1).r);
+	puddles.a =smoothstep(1.0-puddles_amount,1.0,texture(noise_tex,world_pos.xz*0.01).r); //for simple_noise
+	//puddles.a = 1.0-smoothstep(puddles_amount*0.3,(puddles_amount)*0.4,texture(noise_tex,world_pos.xz*scale_UV_rain*0.1).r); //for perlin_noise
 		
 	puddles.a*=puddles_amount;
-	lowp vec2 ripples_uv = uv*0.2;
+	lowp vec2 ripples_uv = uv*0.1;
 	lowp vec4 ripples_tex_color_1 = texture(ripples_tex,ripples_uv);
 	lowp vec4 ripples_tex_color_2 = texture(ripples_tex,ripples_uv*vec2(1.0,-1.0));
 	lowp vec4 ripples_tex_color_3 = texture(ripples_tex,ripples_uv*vec2(-1.0,1.0));
@@ -129,6 +133,8 @@ lowp vec4 get_puddles_and_ripples(lowp vec3 puddles_normal, lowp vec2 uv)
 	ripples1 = mix(ripples1,ripples4,ripples4.a);
 	ripples1.rgb =normalize(ripples1.rgb);
 	ripples1.a*=raining;
+	puddles.a *= float(puddles_noise);
+	puddles.a+=texture(puddles_tex,uv_mat).r*puddles_amount;
 	puddles = mix (puddles,ripples1,step(0.7,ripples1.a*step(0.85,puddles.a)));//puddles+ripples on puddles;
 	puddles.a*= puddles_plain*under_rain;
 	return puddles;
@@ -161,17 +167,19 @@ void fragment()
 	
 	lowp vec2 uv_mat = UV*scale_UV_material;
 	lowp vec4 drops = get_drops_and_streaks(triplanar_uv_rain, triplanar_uv_streaks);
-	lowp vec4 puddles = get_puddles_and_ripples(vec3(0.5,0.5,1.0),triplanar_uv_rain);
+	lowp vec4 puddles = get_puddles_and_ripples(vec3(0.5,0.5,1.0),triplanar_uv_rain,uv_mat);
 	//ALBEDO = vec3(puddles.a);
 	lowp vec3 dry_albedo =texture(Material_Albedo,uv_mat).rgb;
-	lowp float snow_mask =clamp(smoothstep(-0.1,1.0,texture(Material_Albedo,uv_mat,10.0).r)*5.0,0.0,1.0);//there is magical code 
+	//lowp float snow2 =(dry_albedo.x+dry_albedo.y+dry_albedo.z)*0.33;
+	lowp vec3 snow_layer_brightness_averaging =texture(Material_Albedo,uv_mat,10.0).rgb;
+	snow_layer_brightness_averaging.x =snow_brightness/snow_layer_brightness_averaging.x;
+	
 	/*Initially, the snow distribution is taken from the R component of the albedo texture. 
 	But since the textures are generally light and dark, the snow level is different on different materials.
 	If we take a large-level mipmap (the farthest one), it will be a pixel with the brightness of the texture.
 	Knowing the brightness of the texture, we somehow, very incorrectly, but still equalize the level of snow on the materials.*/
 		
-	snow_mask *= snow_distribution*snow_amount;
-	snow_mask = 1.0-smoothstep(0.0,snow_mask,dry_albedo.r);
+	lowp float snow_mask = 1.0-smoothstep(0.0,snow_distribution*snow_amount/snow_brightness,dry_albedo.r*snow_layer_brightness_averaging.x);
 	snow_mask = smoothstep(0.0,0.9,snow_mask);
 	dry_albedo = mix(dry_albedo,vec3(snow_brightness),snow_mask);//add snow
 	dry_albedo = mix(dry_albedo,vec3(snow_brightness),smoothstep(0.8,0.9,snow_distribution*snow_amount));//add snow
@@ -180,7 +188,7 @@ void fragment()
 	dry_rough = mix(dry_rough,1.0,smoothstep(0.0,0.2,snow_mask));//add snow
 	
 	lowp vec3 norm =texture(Material_Norm,uv_mat).rgb;
-	norm = mix(norm,texture(Snow_Norm,triplanar_uv_snow).rgb,snow_mask);//add snow
+	norm = mix(norm,texture(snow_norm,triplanar_uv_snow).rgb,snow_mask);//add snow
 		
 	lowp float dry_metalic = texture(Material_Metal, uv_mat).x;
 	dry_metalic= mix(dry_metalic,0.0,snow_mask);//add snow
