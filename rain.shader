@@ -13,7 +13,8 @@ uniform lowp sampler2D Material_Metal: hint_black;
 uniform lowp float scale_UV_material:hint_range(0.0,10.0);
 uniform lowp float scale_UV_rain: hint_range(0.0,100.0);
 uniform lowp sampler2D roofing_height: hint_black;
-
+uniform lowp vec3 cam_heightmap_world_position;
+uniform lowp float cam_heightmap_size: hint_range(1.0,100.0);
 uniform lowp bool rain;//it rains?
 
 uniform lowp float wet_level: hint_range(0.0,1.0);
@@ -62,9 +63,9 @@ void vertex()
 	mask = abs(weights);
 	
 	//сheck if there is a roof
-	lowp vec3 cam_roof_world_position = vec3(0.0,20.0,0.0);// get position camera from script, which generate heightmap 20 - height of camera
-	lowp vec2 under_roof_uv =0.5+(world_pos.xz-cam_roof_world_position.xz)/30.0; //30 - size of camera in meters
-	lowp float not_under_roof = cam_roof_world_position.y-texture (roofing_height,under_roof_uv).r*30.0;
+	
+	lowp vec2 under_roof_uv =0.5+(world_pos.xz-cam_heightmap_world_position.xz)/cam_heightmap_size; //30 - size of camera in meters
+	lowp float not_under_roof = cam_heightmap_world_position.y-texture (roofing_height,under_roof_uv).r*cam_heightmap_size;
 	not_under_roof = step(world_pos.y,not_under_roof);// not_under_roof - offset, becouse accuracy of float from heightmap and after calculations very low;
 	not_under_roof*= step(under_roof_uv.x,1.0)*step(under_roof_uv.y,1.0);//outside the heightmap-camera ranges always rain and snow;
 	
