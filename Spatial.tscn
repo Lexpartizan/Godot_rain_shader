@@ -23,14 +23,16 @@ size = Vector2( 30, 30 )
 
 [sub_resource type="CubeMesh" id=3]
 
-[sub_resource type="ViewportTexture" id=19]
+[sub_resource type="ViewportTexture" id=4]
 viewport_path = NodePath("Viewport")
 
-[sub_resource type="ShaderMaterial" id=18]
+[sub_resource type="ShaderMaterial" id=5]
 resource_local_to_scene = true
 shader = ExtResource( 8 )
 shader_param/scale_UV_material = 1.0
 shader_param/scale_UV_rain = 3.0
+shader_param/cam_heightmap_world_position = Vector3( 0, 20, 0 )
+shader_param/cam_heightmap_size = 30.0
 shader_param/rain = true
 shader_param/wet_level = 1.0
 shader_param/water_metallnes = 0.0
@@ -44,7 +46,7 @@ shader_param/snow_brightness = 0.5
 shader_param/Material_Albedo = ExtResource( 13 )
 shader_param/Material_Norm = ExtResource( 11 )
 shader_param/Material_Rough = ExtResource( 9 )
-shader_param/roofing_height = SubResource( 19 )
+shader_param/roofing_height = SubResource( 4 )
 shader_param/puddles_tex = ExtResource( 10 )
 shader_param/noise_tex = ExtResource( 12 )
 shader_param/drops_tex = ExtResource( 6 )
@@ -52,22 +54,22 @@ shader_param/ripples_tex = ExtResource( 7 )
 shader_param/streaks_tex = ExtResource( 2 )
 shader_param/snow_norm = ExtResource( 5 )
 
-[sub_resource type="SphereMesh" id=4]
+[sub_resource type="SphereMesh" id=6]
 
-[sub_resource type="PlaneMesh" id=5]
+[sub_resource type="PlaneMesh" id=7]
 subdivide_width = 4
 subdivide_depth = 4
 
-[sub_resource type="ShaderMaterial" id=6]
+[sub_resource type="ShaderMaterial" id=8]
 shader = ExtResource( 3 )
 
-[sub_resource type="QuadMesh" id=7]
-material = SubResource( 6 )
+[sub_resource type="QuadMesh" id=9]
+material = SubResource( 8 )
 size = Vector2( 2, 2 )
 
-[sub_resource type="SphereMesh" id=8]
+[sub_resource type="SphereMesh" id=10]
 
-[sub_resource type="Shader" id=9]
+[sub_resource type="Shader" id=11]
 code = "shader_type spatial;
 render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx;
 uniform vec4 albedo : hint_color;
@@ -120,8 +122,8 @@ void fragment() {
 }
 "
 
-[sub_resource type="ShaderMaterial" id=10]
-shader = SubResource( 9 )
+[sub_resource type="ShaderMaterial" id=12]
+shader = SubResource( 11 )
 shader_param/albedo = Color( 1, 1, 1, 1 )
 shader_param/specular = 0.5
 shader_param/metallic = 0.0
@@ -133,7 +135,7 @@ shader_param/uv1_offset = Vector3( 0, 0, 0 )
 shader_param/uv2_scale = Vector3( 1, 1, 1 )
 shader_param/uv2_offset = Vector3( 0, 0, 0 )
 
-[sub_resource type="PlaneMesh" id=20]
+[sub_resource type="PlaneMesh" id=13]
 
 [sub_resource type="PanoramaSky" id=14]
 panorama = ExtResource( 1 )
@@ -172,21 +174,21 @@ material/0 = null
 [node name="MeshInstance" type="MeshInstance" parent="."]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.801386, 0, 0 )
 mesh = SubResource( 3 )
-material/0 = SubResource( 18 )
+material/0 = SubResource( 5 )
 
 [node name="MeshInstance3" type="MeshInstance" parent="."]
-transform = Transform( 0.909832, -0.0206752, -0.414461, 0.0243092, 0.999698, 0.00349431, 0.414263, -0.0132544, 0.910061, -1.97158, 0, -0.12516 )
-mesh = SubResource( 4 )
-material/0 = SubResource( 18 )
+transform = Transform( 0.909832, -0.0206752, -0.414461, 0.0243092, 0.999698, 0.00349431, 0.414263, -0.0132544, 0.910061, -2.86259, 0, -0.12516 )
+mesh = SubResource( 6 )
+material/0 = SubResource( 5 )
 
 [node name="MeshInstance2" type="MeshInstance" parent="."]
 transform = Transform( 1, 0, 0, 0, 0.999999, 0, 0, 0, 0.999999, 4.82786, 1.18526, 0.158417 )
-mesh = SubResource( 5 )
-material/0 = SubResource( 18 )
+mesh = SubResource( 7 )
+material/0 = SubResource( 5 )
 
 [node name="MeshInstance4" type="MeshInstance" parent="."]
 transform = Transform( 0.839781, 0, -0.542925, 0, 1, 0, 0.542925, 0, 0.839781, -2.66789, 0.784456, 5.16028 )
-mesh = SubResource( 7 )
+mesh = SubResource( 9 )
 material/0 = null
 
 [node name="MeshInstance5" type="MeshInstance" parent="."]
@@ -194,12 +196,12 @@ transform = Transform( 0.997541, -1.14187e-08, 0.0700873, -0.0700873, -1.6252e-0
 
 [node name="MeshInstance6" type="MeshInstance" parent="."]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -5.56901, 0, 1.12986 )
-mesh = SubResource( 8 )
-material/0 = SubResource( 10 )
+mesh = SubResource( 10 )
+material/0 = SubResource( 12 )
 
 [node name="MeshInstance7" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -3.80918, 2.79498, 0.335493 )
-mesh = SubResource( 20 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1.74623, 2.79498, 0.335493 )
+mesh = SubResource( 13 )
 material/0 = null
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
