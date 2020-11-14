@@ -12,6 +12,7 @@ uniform lowp sampler2D Material_Rough: hint_white;
 uniform lowp sampler2D Material_Metal: hint_black;
 uniform lowp float scale_UV_material:hint_range(0.0,10.0);
 uniform lowp float scale_UV_rain: hint_range(0.0,100.0);
+uniform lowp sampler2D roofing_height: hint_black;
 
 uniform lowp bool rain;//it rains?
 
@@ -55,15 +56,22 @@ varying lowp float puddles_amount;
 void vertex()
 {
 	//world_up = mat3(WORLD_MATRIX)*vec3(0.0,1.0,0.0);
-	pos = VERTEX;//this fits for simple triplanar
+	pos = mat3(WORLD_MATRIX)*VERTEX;//this fits for simple triplanar
 	world_pos = ((WORLD_MATRIX)*vec4(VERTEX,1.0)).xyz;// for triplanar puddles
 	weights = mat3(WORLD_MATRIX)*NORMAL;// weights*=weights;
 	mask = abs(weights);
 	
+	//сheck if there is a roof
+	lowp vec3 cam_roof_world_position = vec3(0.0,20.0,0.0);// get position camera from script, which generate heightmap 20 - height of camera
+	lowp vec2 under_roof_uv =0.5+(world_pos.xz-cam_roof_world_position.xz)/30.0; //30 - size of camera in meters
+	lowp float not_under_roof = cam_roof_world_position.y-texture (roofing_height,under_roof_uv).r*30.0;
+	not_under_roof = step(world_pos.y,not_under_roof);// not_under_roof - offset, becouse accuracy of float from heightmap and after calculations very low;
+	not_under_roof*= step(under_roof_uv.x,1.0)*step(under_roof_uv.y,1.0);//outside the heightmap-camera ranges always rain and snow;
+	
 	time = TIME*1.5;
 	raining = float(rain);// rain_amount not 0.0;
-	under_rain = smoothstep(dry_angle,0.0,weights.y);// normal looks down, the rain doesn't flow. 0.0 - under roof,1.0 - under rain 
-	snow_distribution = smoothstep(without_snow_angle,1.0,weights.y);
+	under_rain = not_under_roof*smoothstep(dry_angle,0.0,weights.y);// normal looks down, the rain doesn't flow. 0.0 - under roof,1.0 - under rain 
+	snow_distribution = not_under_roof*smoothstep(without_snow_angle,1.0,weights.y);
 	start_streaks_angle = 1.0-step(streaks_angle,weights.y);
 	puddles_plain =step(0.999,weights.y);//puddles only on top;
 	wetness = smoothstep(0.0,0.25,wet_level);
@@ -168,6 +176,8 @@ void fragment()
 	lowp vec2 uv_mat = UV*scale_UV_material;
 	lowp vec4 drops = get_drops_and_streaks(triplanar_uv_rain, triplanar_uv_streaks);
 	lowp vec4 puddles = get_puddles_and_ripples(vec3(0.5,0.5,1.0),triplanar_uv_rain,uv_mat);
+	drops.a*=under_rain;
+	puddles.a*=under_rain;
 	//ALBEDO = vec3(puddles.a);
 	lowp vec3 dry_albedo =texture(Material_Albedo,uv_mat).rgb;
 	//lowp float snow2 =(dry_albedo.x+dry_albedo.y+dry_albedo.z)*0.33;
@@ -178,6 +188,7 @@ void fragment()
 	But since the textures are generally light and dark, the snow level is different on different materials.
 	If we take a large-level mipmap (the farthest one), it will be a pixel with the brightness of the texture.
 	Knowing the brightness of the texture, we somehow, very incorrectly, but still equalize the level of snow on the materials.*/
+		
 		
 	lowp float snow_mask = 1.0-smoothstep(0.0,snow_distribution*snow_amount/snow_brightness,dry_albedo.r*snow_layer_brightness_averaging.x);
 	snow_mask = smoothstep(0.0,0.9,snow_mask);
@@ -197,6 +208,7 @@ void fragment()
 	lowp float factor = mix(1.0,0.2,(1.0-dry_metalic)*porosity);
 	lowp float wet_rough = 1.0 - mix(1.0,1.0 - dry_rough,mix(1.0,factor,wetness*0.5));//wetness*0.5 in original formula
 	//wet albedo code ends
+	
 	lowp vec3 wet_albedo =saturation(1.0+wetness,dry_albedo);
 	wet_albedo = wet_albedo*mix(1.0,factor,wetness);
 	wet_albedo = mix(dry_albedo,wet_albedo,under_rain);
@@ -214,4 +226,5 @@ void fragment()
 	wet_rough = mix(wet_rough,0.3,puddles.a);
 	wet_rough = mix(wet_rough,wet_rough*0.5,thin_layer_water);
 	ROUGHNESS = mix(dry_rough,wet_rough,under_rain);
+	//ALBEDO = vec3(not_under_roof);
 	}
