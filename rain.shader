@@ -1,8 +1,7 @@
 //So, this work based on:
-//1. drops: https://www.shadertoy.com/view/ldSBWW   Author: Élie Michel License: CC BY 3.0
+//1. youtube lessons of Ben Cloward https://www.youtube.com/watch?v=fYGOZYST-oQ&list=PL78XDi0TS4lHpIHseomZCPRm_NkyUMkPs
 //2. streaks: https:/deepspacebanana.github.io/blog/shader/art/unreal%20engine/Rainy-Surface-Shader-Part-1
 //3. wet albedo: https://seblagarde.wordpress.com/2013/04/14/water-drop-3b-physically-based-wet-surfaces/
-//So, license CC BY 3.0, becouse drops.
 shader_type spatial;
 //render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx, world_vertex_coords;
 
@@ -36,9 +35,6 @@ uniform lowp sampler2D ripples_tex; //normal.rg+timeshift+alpha
 uniform lowp sampler2D streaks_tex; //normal.rg+timeshift+alpha
 uniform lowp sampler2D snow_norm: hint_normal;
 
-//uniform lowp sampler2D Snow_Rough: hint_white;
-//varying lowp vec3 world_up;
-varying lowp vec3 pos;
 varying lowp vec3 world_pos;
 varying lowp vec3 weights;
 varying lowp vec3 mask;
@@ -56,23 +52,19 @@ varying lowp float puddles_amount;
 //varying lowp vec2 triplanar_uv_snow;
 void vertex()
 {
-	//world_up = mat3(WORLD_MATRIX)*vec3(0.0,1.0,0.0);
-	pos = mat3(WORLD_MATRIX)*VERTEX;//this fits for simple triplanar
 	world_pos = ((WORLD_MATRIX)*vec4(VERTEX,1.0)).xyz;// for triplanar puddles
-	weights = mat3(WORLD_MATRIX)*NORMAL;// weights*=weights;
+	weights = mat3(WORLD_MATRIX)*NORMAL;
 	mask = abs(weights);
-	
 	//сheck if there is a roof
-	
-	lowp vec2 under_roof_uv =0.5+(world_pos.xz-cam_heightmap_world_position.xz)/cam_heightmap_size; //30 - size of camera in meters
-	lowp float not_under_roof = cam_heightmap_world_position.y-texture (roofing_height,under_roof_uv).r*cam_heightmap_size;
-	not_under_roof = step(world_pos.y,not_under_roof);// not_under_roof - offset, becouse accuracy of float from heightmap and after calculations very low;
-	not_under_roof*= step(under_roof_uv.x,1.0)*step(under_roof_uv.y,1.0);//outside the heightmap-camera ranges always rain and snow;
+	lowp vec2 roof_uv =  (world_pos.xz - cam_heightmap_world_position.xz)/ cam_heightmap_size + 0.5;
+	lowp float occluder = texture(roofing_height,roof_uv).g;
+	occluder = step(occluder-0.1,world_pos.y);
+	occluder*= step(roof_uv.x,1.0)*step(roof_uv.y,1.0);//outside the heightmap-camera ranges always rain and snow;
 	
 	time = TIME*1.5;
 	raining = float(rain);// rain_amount not 0.0;
-	under_rain = not_under_roof*smoothstep(dry_angle,0.0,weights.y);// normal looks down, the rain doesn't flow. 0.0 - under roof,1.0 - under rain 
-	snow_distribution = not_under_roof*smoothstep(without_snow_angle,1.0,weights.y);
+	under_rain = occluder*smoothstep(dry_angle,0.0,weights.y);// normal looks down, the rain doesn't flow. 0.0 - under roof,1.0 - under rain 
+	snow_distribution = occluder*smoothstep(without_snow_angle,1.0,weights.y);
 	start_streaks_angle = 1.0-step(streaks_angle,weights.y);
 	puddles_plain =step(0.999,weights.y);//puddles only on top;
 	wetness = smoothstep(0.0,0.25,wet_level);
@@ -164,14 +156,14 @@ void fragment()
 	lowp vec2 triplanar_uv_snow;
 	
 	lowp float branchless = step(mask.x,mask.z);
-	triplanar_uv_rain = pos.xy*branchless+pos.zy*(1.0-branchless);//branchless primitive triplanar proj
+	triplanar_uv_rain = world_pos.xy*branchless+world_pos.zy*(1.0-branchless);//branchless primitive triplanar proj
 	triplanar_uv_streaks = triplanar_uv_rain; //streaks projected only by sides
 	branchless = step(mask.x,mask.y)*step(mask.z,mask.y);
-	triplanar_uv_rain = triplanar_uv_rain*(1.0-branchless)+pos.xz*branchless;//
+	triplanar_uv_rain = triplanar_uv_rain*(1.0-branchless)+world_pos.xz*branchless;//
 	
 	triplanar_uv_rain*=scale_UV_rain;
 	triplanar_uv_streaks*=scale_UV_rain*0.2;
-	triplanar_uv_snow = pos.xz*scale_UV_rain*0.1;
+	triplanar_uv_snow = world_pos.xz*scale_UV_rain*0.1;
 	//uv calculating is done. i want do this in vertex, but get some artefacts on the borders of projections. Sad.
 	
 	lowp vec2 uv_mat = UV*scale_UV_material;
@@ -179,18 +171,14 @@ void fragment()
 	lowp vec4 puddles = get_puddles_and_ripples(vec3(0.5,0.5,1.0),triplanar_uv_rain,uv_mat);
 	drops.a*=under_rain;
 	puddles.a*=under_rain;
-	//ALBEDO = vec3(puddles.a);
 	lowp vec3 dry_albedo =texture(Material_Albedo,uv_mat).rgb;
-	//lowp float snow2 =(dry_albedo.x+dry_albedo.y+dry_albedo.z)*0.33;
+	
 	lowp vec3 snow_layer_brightness_averaging =texture(Material_Albedo,uv_mat,10.0).rgb;
 	snow_layer_brightness_averaging.x =snow_brightness/snow_layer_brightness_averaging.x;
-	
 	/*Initially, the snow distribution is taken from the R component of the albedo texture. 
 	But since the textures are generally light and dark, the snow level is different on different materials.
 	If we take a large-level mipmap (the farthest one), it will be a pixel with the brightness of the texture.
 	Knowing the brightness of the texture, we somehow, very incorrectly, but still equalize the level of snow on the materials.*/
-		
-		
 	lowp float snow_mask = 1.0-smoothstep(0.0,snow_distribution*snow_amount/snow_brightness,dry_albedo.r*snow_layer_brightness_averaging.x);
 	snow_mask = smoothstep(0.0,0.9,snow_mask);
 	dry_albedo = mix(dry_albedo,vec3(snow_brightness),snow_mask);//add snow
@@ -204,7 +192,7 @@ void fragment()
 		
 	lowp float dry_metalic = texture(Material_Metal, uv_mat).x;
 	dry_metalic= mix(dry_metalic,0.0,snow_mask);//add snow
-		//wet albedo code
+	//wet albedo code
 	lowp float porosity =clamp((dry_rough-0.5)/0.4,0.0,1.0);
 	lowp float factor = mix(1.0,0.2,(1.0-dry_metalic)*porosity);
 	lowp float wet_rough = 1.0 - mix(1.0,1.0 - dry_rough,mix(1.0,factor,wetness*0.5));//wetness*0.5 in original formula
@@ -221,11 +209,10 @@ void fragment()
 	
 	norm = mix(norm,drops.rgb,drops.a);
 	norm = mix(norm,puddles.rgb,puddles.a);
-	//NORMALMAP = normalize(norm);
 	NORMALMAP = norm;
+
 	wet_rough = mix(wet_rough,0.07,drops.a);
 	wet_rough = mix(wet_rough,0.3,puddles.a);
 	wet_rough = mix(wet_rough,wet_rough*0.5,thin_layer_water);
 	ROUGHNESS = mix(dry_rough,wet_rough,under_rain);
-	//ALBEDO = vec3(not_under_roof);
-	}
+}
