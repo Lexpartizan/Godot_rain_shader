@@ -1,150 +1,55 @@
-[gd_scene load_steps=30 format=2]
+[gd_scene load_steps=17 format=2]
 
 [ext_resource path="res://bethnal_green_entrance_2k.hdr" type="Texture" id=1]
-[ext_resource path="res://streaks512.png" type="Texture" id=2]
 [ext_resource path="res://depth_buffer.shader" type="Shader" id=3]
 [ext_resource path="res://roof_depth.shader" type="Shader" id=4]
-[ext_resource path="res://Snow005_2K_Normal.jpg" type="Texture" id=5]
-[ext_resource path="res://drops512.png" type="Texture" id=6]
-[ext_resource path="res://ripples512.png" type="Texture" id=7]
-[ext_resource path="res://rain.shader" type="Shader" id=8]
-[ext_resource path="res://PavingStones090_2K_Roughness.jpg" type="Texture" id=9]
-[ext_resource path="res://puddles_texture.jpg" type="Texture" id=10]
-[ext_resource path="res://PavingStones090_2K_Normal.jpg" type="Texture" id=11]
-[ext_resource path="res://simple_noise.png" type="Texture" id=12]
-[ext_resource path="res://PavingStones090_2K_Color.jpg" type="Texture" id=13]
+[ext_resource path="res://rain_material.tres" type="Material" id=5]
 
-[sub_resource type="ShaderMaterial" id=1]
+[sub_resource type="GDScript" id=1]
+script/source = "extends Viewport
+tool
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	var res = load(\"res://roof_cam.tres\")
+	res.setup_local_to_scene() #Without this, for some reason, this viewport in the shader does not work. 
+	#print(res.resource_local_to_scene)
+	#res.resource_local_to_scene = false 
+	pass # Replace with function body.
+"
+
+[sub_resource type="ShaderMaterial" id=2]
 shader = ExtResource( 4 )
 
-[sub_resource type="PlaneMesh" id=2]
-material = SubResource( 1 )
+[sub_resource type="PlaneMesh" id=3]
+material = SubResource( 2 )
 size = Vector2( 30, 30 )
 
-[sub_resource type="CubeMesh" id=3]
+[sub_resource type="CubeMesh" id=4]
 
-[sub_resource type="ViewportTexture" id=4]
-viewport_path = NodePath("Viewport")
-
-[sub_resource type="ShaderMaterial" id=5]
-resource_local_to_scene = true
-shader = ExtResource( 8 )
-shader_param/scale_UV_material = 1.0
-shader_param/scale_UV_rain = 3.0
-shader_param/cam_heightmap_world_position = Vector3( 0, 20, 0 )
-shader_param/cam_heightmap_size = 30.0
-shader_param/rain = true
-shader_param/wet_level = 1.0
-shader_param/water_metallnes = 0.0
-shader_param/dry_angle = -0.1
-shader_param/puddles_noise = false
-shader_param/streaks_length = 0.5
-shader_param/streaks_angle = 0.8
-shader_param/snow_amount = 1.0
-shader_param/without_snow_angle = 0.3
-shader_param/snow_brightness = 0.5
-shader_param/Material_Albedo = ExtResource( 13 )
-shader_param/Material_Norm = ExtResource( 11 )
-shader_param/Material_Rough = ExtResource( 9 )
-shader_param/roofing_height = SubResource( 4 )
-shader_param/puddles_tex = ExtResource( 10 )
-shader_param/noise_tex = ExtResource( 12 )
-shader_param/drops_tex = ExtResource( 6 )
-shader_param/ripples_tex = ExtResource( 7 )
-shader_param/streaks_tex = ExtResource( 2 )
-shader_param/snow_norm = ExtResource( 5 )
-
-[sub_resource type="SphereMesh" id=6]
-
-[sub_resource type="PlaneMesh" id=7]
+[sub_resource type="PlaneMesh" id=5]
 subdivide_width = 4
 subdivide_depth = 4
 
-[sub_resource type="ShaderMaterial" id=8]
+[sub_resource type="ShaderMaterial" id=6]
 shader = ExtResource( 3 )
 
-[sub_resource type="QuadMesh" id=9]
-material = SubResource( 8 )
+[sub_resource type="QuadMesh" id=7]
+material = SubResource( 6 )
 size = Vector2( 2, 2 )
 
-[sub_resource type="SphereMesh" id=10]
+[sub_resource type="PlaneMesh" id=8]
 
-[sub_resource type="Shader" id=11]
-code = "shader_type spatial;
-render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx;
-uniform vec4 albedo : hint_color;
-uniform sampler2D texture_albedo : hint_albedo;
-uniform float specular;
-uniform float metallic;
-uniform float roughness : hint_range(0,1);
-uniform float point_size : hint_range(0,128);
-varying vec3 uv1_triplanar_pos;
-uniform float uv1_blend_sharpness;
-varying vec3 uv1_power_normal;
-uniform vec3 uv1_scale;
-uniform vec3 uv1_offset;
-uniform vec3 uv2_scale;
-uniform vec3 uv2_offset;
+[sub_resource type="SphereMesh" id=9]
 
-
-void vertex() {
-	uv1_power_normal=pow(abs(NORMAL),vec3(uv1_blend_sharpness));
-	uv1_power_normal/=dot(uv1_power_normal,vec3(1.0));
-	uv1_triplanar_pos = VERTEX * uv1_scale + uv1_offset;
-	uv1_triplanar_pos *= vec3(1.0,-1.0, 1.0);
-}
-
-
-vec4 triplanar_texture(sampler2D p_sampler,vec3 p_weights,vec3 p_triplanar_pos) {
-	vec4 samp=vec4(0.0);
-	samp+= texture(p_sampler,p_triplanar_pos.xy) * p_weights.z;
-	samp+= texture(p_sampler,p_triplanar_pos.xz) * p_weights.y;
-	samp+= texture(p_sampler,p_triplanar_pos.zy * vec2(-1.0,1.0)) * p_weights.x;
-	return samp;
-}
-
-
-void fragment() {
-	lowp vec3 pos = mat3(WORLD_MATRIX)*VERTEX;
-	lowp vec3 weights = mat3(WORLD_MATRIX)*NORMAL;// weights*=weights;
-	lowp vec3 mask = abs(weights);
-	lowp vec2 triplanar_uv_rain;
-	lowp float branchless = step(mask.x,mask.z);
-	triplanar_uv_rain = pos.xy*branchless+pos.zy*(1.0-branchless);//branchless primitive triplanar proj
-	branchless = step(mask.x,mask.y)*step(mask.z,mask.y);
-	triplanar_uv_rain = triplanar_uv_rain*(1.0-branchless)+pos.xz*branchless;//
-	
-	vec4 albedo_tex = texture(texture_albedo,triplanar_uv_rain);
-	ALBEDO = albedo.rgb * albedo_tex.rgb;
-	METALLIC = metallic;
-	ROUGHNESS = roughness;
-	SPECULAR = specular;
-}
-"
-
-[sub_resource type="ShaderMaterial" id=12]
-shader = SubResource( 11 )
-shader_param/albedo = Color( 1, 1, 1, 1 )
-shader_param/specular = 0.5
-shader_param/metallic = 0.0
-shader_param/roughness = 1.0
-shader_param/point_size = 1.0
-shader_param/uv1_blend_sharpness = 64.0
-shader_param/uv1_scale = Vector3( 1, 1, 1 )
-shader_param/uv1_offset = Vector3( 0, 0, 0 )
-shader_param/uv2_scale = Vector3( 1, 1, 1 )
-shader_param/uv2_offset = Vector3( 0, 0, 0 )
-
-[sub_resource type="PlaneMesh" id=13]
-
-[sub_resource type="PanoramaSky" id=14]
+[sub_resource type="PanoramaSky" id=10]
 panorama = ExtResource( 1 )
 
-[sub_resource type="Environment" id=15]
+[sub_resource type="Environment" id=11]
 background_mode = 2
-background_sky = SubResource( 14 )
+background_sky = SubResource( 10 )
 
-[sub_resource type="ViewportTexture" id=16]
+[sub_resource type="ViewportTexture" id=12]
 viewport_path = NodePath("Viewport")
 
 [node name="Spatial" type="Spatial"]
@@ -154,13 +59,17 @@ transform = Transform( 1, 0, 0, 0, 0.780114, 0.625638, 0, -0.625638, 0.780114, -
 
 [node name="Viewport" type="Viewport" parent="."]
 size = Vector2( 256, 256 )
-hdr = false
+handle_input_locally = false
+keep_3d_linear = true
 render_target_v_flip = true
 render_target_update_mode = 3
+gui_snap_controls_to_pixels = false
+script = SubResource( 1 )
 
 [node name="Camera" type="Camera" parent="Viewport"]
 transform = Transform( 1, 0, 0, 0, -1.62921e-07, 1, 0, -1, -1.62921e-07, 0, 20, 0 )
 projection = 1
+current = true
 size = 30.0
 near = 0.01
 far = 30.0
@@ -168,45 +77,40 @@ far = 30.0
 [node name="MeshInstance" type="MeshInstance" parent="Viewport/Camera"]
 transform = Transform( 1, 0, 0, 0, -1.62921e-07, -1, 0, 1, -1.62921e-07, 0, 0, -0.02 )
 cast_shadow = 0
-mesh = SubResource( 2 )
+mesh = SubResource( 3 )
 material/0 = null
 
 [node name="MeshInstance" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.801386, 0, 0 )
-mesh = SubResource( 3 )
-material/0 = SubResource( 5 )
-
-[node name="MeshInstance3" type="MeshInstance" parent="."]
-transform = Transform( 0.909832, -0.0206752, -0.414461, 0.0243092, 0.999698, 0.00349431, 0.414263, -0.0132544, 0.910061, -2.86259, 0, -0.12516 )
-mesh = SubResource( 6 )
-material/0 = SubResource( 5 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0175768, -4.76837e-07, -0.00418043 )
+mesh = SubResource( 4 )
+material/0 = ExtResource( 5 )
 
 [node name="MeshInstance2" type="MeshInstance" parent="."]
 transform = Transform( 1, 0, 0, 0, 0.999999, 0, 0, 0, 0.999999, 4.82786, 1.18526, 0.158417 )
-mesh = SubResource( 7 )
-material/0 = SubResource( 5 )
+mesh = SubResource( 5 )
+material/0 = ExtResource( 5 )
 
 [node name="MeshInstance4" type="MeshInstance" parent="."]
 transform = Transform( 0.839781, 0, -0.542925, 0, 1, 0, 0.542925, 0, 0.839781, -2.66789, 0.784456, 5.16028 )
-mesh = SubResource( 9 )
+mesh = SubResource( 7 )
 material/0 = null
 
 [node name="MeshInstance5" type="MeshInstance" parent="."]
 transform = Transform( 0.997541, -1.14187e-08, 0.0700873, -0.0700873, -1.6252e-07, 0.997541, 0, -1, -1.62921e-07, 4.8331, 0, 0 )
 
-[node name="MeshInstance6" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -5.56901, 0, 1.12986 )
-mesh = SubResource( 10 )
-material/0 = SubResource( 12 )
-
 [node name="MeshInstance7" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -1.74623, 2.79498, 0.335493 )
-mesh = SubResource( 13 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 2, -1.34914, 2.07693, -0.238411 )
+mesh = SubResource( 8 )
 material/0 = null
 
+[node name="MeshInstance3" type="MeshInstance" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.62111, 0, 0 )
+mesh = SubResource( 9 )
+material/0 = ExtResource( 5 )
+
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = SubResource( 15 )
+environment = SubResource( 11 )
 
 [node name="Sprite" type="Sprite" parent="."]
 position = Vector2( 896.5, 130 )
-texture = SubResource( 16 )
+texture = SubResource( 12 )
