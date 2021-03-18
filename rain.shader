@@ -36,6 +36,7 @@ uniform lowp sampler2D streaks_tex; //normal.rg+timeshift+alpha
 uniform lowp sampler2D snow_norm: hint_normal;
 
 varying lowp vec3 world_pos;
+varying lowp vec3 model_pos;
 varying lowp vec3 weights;
 varying lowp vec3 mask;
 
@@ -52,13 +53,14 @@ varying lowp float puddles_amount;
 //varying lowp vec2 triplanar_uv_snow;
 void vertex()
 {
-	world_pos = ((WORLD_MATRIX)*vec4(VERTEX,1.0)).xyz;// for triplanar puddles
+	world_pos = ((WORLD_MATRIX)*vec4(VERTEX,1.0)).xyz;// world position coords
+	model_pos =mat3(WORLD_MATRIX)*VERTEX; //noise or textures moves with object
 	weights = mat3(WORLD_MATRIX)*NORMAL;
 	mask = abs(weights);
 	//сheck if there is a roof
 	lowp vec2 roof_uv =  (world_pos.xz - cam_heightmap_world_position.xz)/ cam_heightmap_size + 0.5;
 	lowp float occluder = texture(roofing_height,roof_uv).g;
-	occluder = step(occluder-0.1,world_pos.y);
+	occluder = step(occluder-0.25,world_pos.y);
 	occluder*= step(roof_uv.x,1.0)*step(roof_uv.y,1.0);//outside the heightmap-camera ranges always rain and snow;
 	
 	time = TIME*1.5;
@@ -105,7 +107,7 @@ lowp vec4 get_puddles_and_ripples(lowp vec3 puddles_normal, lowp vec2 uv, lowp v
 {
 	lowp vec4 puddles;
 	puddles.rgb =puddles_normal;
-	puddles.a =smoothstep(1.0-puddles_amount,1.0,texture(noise_tex,world_pos.xz*0.01).r); //for simple_noise
+	puddles.a =smoothstep(1.0-puddles_amount,1.0,texture(noise_tex,model_pos.xz*0.01).r); //for simple_noise
 	//puddles.a = 1.0-smoothstep(puddles_amount*0.3,(puddles_amount)*0.4,texture(noise_tex,world_pos.xz*scale_UV_rain*0.1).r); //for perlin_noise
 		
 	puddles.a*=puddles_amount;
@@ -156,14 +158,14 @@ void fragment()
 	lowp vec2 triplanar_uv_snow;
 	
 	lowp float branchless = step(mask.x,mask.z);
-	triplanar_uv_rain = world_pos.xy*branchless+world_pos.zy*(1.0-branchless);//branchless primitive triplanar proj
+	triplanar_uv_rain = model_pos.xy*branchless+model_pos.zy*(1.0-branchless);//branchless primitive triplanar proj
 	triplanar_uv_streaks = triplanar_uv_rain; //streaks projected only by sides
 	branchless = step(mask.x,mask.y)*step(mask.z,mask.y);
-	triplanar_uv_rain = triplanar_uv_rain*(1.0-branchless)+world_pos.xz*branchless;//
+	triplanar_uv_rain = triplanar_uv_rain*(1.0-branchless)+model_pos.xz*branchless;//
 	
 	triplanar_uv_rain*=scale_UV_rain;
 	triplanar_uv_streaks*=scale_UV_rain*0.2;
-	triplanar_uv_snow = world_pos.xz*scale_UV_rain*0.1;
+	triplanar_uv_snow = model_pos.xz*scale_UV_rain*0.1;
 	//uv calculating is done. i want do this in vertex, but get some artefacts on the borders of projections. Sad.
 	
 	lowp vec2 uv_mat = UV*scale_UV_material;
