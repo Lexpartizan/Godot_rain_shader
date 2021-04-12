@@ -81,12 +81,12 @@ mesh = SubResource( 3 )
 material/0 = null
 
 [node name="MeshInstance" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0175768, -4.76837e-07, -0.00418043 )
+transform = Transform( 1, 0, 0, 0, 0.999416, -0.0341843, 0, 0.0341843, 0.999416, 0.122846, -4.76837e-07, -0.00418043 )
 mesh = SubResource( 4 )
 material/0 = ExtResource( 5 )
 
 [node name="MeshInstance2" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 0.999999, 0, 0, 0, 0.999999, 4.82786, 1.18526, 0.158417 )
+transform = Transform( 1, 0, 0, 0, 0.999999, 0, 0, 0, 0.999999, -5.0926, 1.392, 0 )
 mesh = SubResource( 5 )
 material/0 = ExtResource( 5 )
 
@@ -99,12 +99,12 @@ material/0 = null
 transform = Transform( 0.997541, -1.14187e-08, 0.0700873, -0.0700873, -1.6252e-07, 0.997541, 0, -1, -1.62921e-07, 4.8331, 0, 0 )
 
 [node name="MeshInstance7" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 2, -1.34914, 2.07693, -0.238411 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 2, -5.90905, 2.07693, -0.129272 )
 mesh = SubResource( 8 )
 material/0 = null
 
 [node name="MeshInstance3" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -2.62111, 0, 0 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8266, 0, 0 )
 mesh = SubResource( 9 )
 material/0 = ExtResource( 5 )
 
