@@ -60,18 +60,19 @@ void vertex()
 	//сheck if there is a roof
 	lowp vec2 roof_uv =  (world_pos.xz - cam_heightmap_world_position.xz)/ cam_heightmap_size + 0.5;
 	lowp float occluder = texture(roofing_height,roof_uv).g;
-	occluder = step(occluder-0.25,world_pos.y);
-	occluder*= step(roof_uv.x,1.0)*step(roof_uv.y,1.0);//outside the heightmap-camera ranges always rain and snow;
-	
+	//occluder = step(occluder-0.25, world_pos.y);
+	occluder = step(world_pos.y,occluder-0.25);
+	occluder*= step(roof_uv.x,1.0)*step(roof_uv.y,1.0)*step(0.0,roof_uv.x)*step(0.0,roof_uv.y);//outside the heightmap-camera ranges always rain and snow;
+	occluder = 1.0-occluder;
 	time = TIME*1.5;
 	raining = float(rain);// rain_amount not 0.0;
 	under_rain = occluder*smoothstep(dry_angle,0.0,weights.y);// normal looks down, the rain doesn't flow. 0.0 - under roof,1.0 - under rain 
 	snow_distribution = occluder*smoothstep(without_snow_angle,1.0,weights.y);
 	start_streaks_angle = 1.0-step(streaks_angle,weights.y);
 	puddles_plain =step(0.999,weights.y);//puddles only on top;
-	wetness = smoothstep(0.0,0.25,wet_level);
-	thin_layer_water = smoothstep(0.25,0.5,wet_level);
-	puddles_amount = smoothstep(0.0,1.0,wet_level);
+	wetness = smoothstep(0.0,0.5,wet_level);
+	thin_layer_water = smoothstep(0.5,1.0,wet_level);
+	puddles_amount = smoothstep(0.05,1.0,wet_level);
 	//lowp float snow_height =0.05*smoothstep(0.7,1.0,snow_distribution*snow_amount); //because sometime mesh tears
 	//VERTEX+= NORMAL*snow_height;
 }
@@ -110,7 +111,7 @@ lowp vec4 get_puddles_and_ripples(lowp vec3 puddles_normal, lowp vec2 uv, lowp v
 	puddles.a =smoothstep(1.0-puddles_amount,1.0,texture(noise_tex,model_pos.xz*0.01).r); //for simple_noise
 	//puddles.a = 1.0-smoothstep(puddles_amount*0.3,(puddles_amount)*0.4,texture(noise_tex,world_pos.xz*scale_UV_rain*0.1).r); //for perlin_noise
 		
-	puddles.a*=puddles_amount;
+	//puddles.a*=puddles_amount;
 	lowp vec2 ripples_uv = uv*0.1;
 	lowp vec4 ripples_tex_color_1 = texture(ripples_tex,ripples_uv);
 	lowp vec4 ripples_tex_color_2 = texture(ripples_tex,ripples_uv*vec2(1.0,-1.0));
@@ -182,15 +183,18 @@ void fragment()
 	If we take a large-level mipmap (the farthest one), it will be a pixel with the brightness of the texture.
 	Knowing the brightness of the texture, we somehow, very incorrectly, but still equalize the level of snow on the materials.*/
 	lowp float snow_mask = 1.0-smoothstep(0.0,snow_distribution*snow_amount/snow_brightness,dry_albedo.r*snow_layer_brightness_averaging.x);
-	snow_mask = smoothstep(0.0,0.9,snow_mask);
+	snow_mask = smoothstep(0.0,0.8,snow_mask);
 	dry_albedo = mix(dry_albedo,vec3(snow_brightness),snow_mask);//add snow
-	dry_albedo = mix(dry_albedo,vec3(snow_brightness),smoothstep(0.8,0.9,snow_distribution*snow_amount));//add snow
-		
+	dry_albedo = mix(dry_albedo,vec3(snow_brightness),smoothstep(0.8,0.9,snow_distribution*snow_amount));//add snow, becouse snow_distribution*snow amount = 1.0 only in 1 point
+	//dry_albedo = clamp(vec3(0.0),vec3(snow_brightness),dry_albedo);
 	lowp float dry_rough = texture(Material_Rough,uv_mat).r;
-	dry_rough = mix(dry_rough,1.0,smoothstep(0.0,0.2,snow_mask));//add snow
+	dry_rough = mix(dry_rough,1.0,snow_mask);//add snow
+	dry_rough = mix(dry_rough,1.0,smoothstep(0.8,0.9,snow_distribution*snow_amount));//add snow, becouse snow_distribution*snow amount = 1.0 only in 1 point
 	
 	lowp vec3 norm =texture(Material_Norm,uv_mat).rgb;
-	norm = mix(norm,texture(snow_norm,triplanar_uv_snow).rgb,snow_mask);//add snow
+	lowp vec3 snow_normals = texture(snow_norm,triplanar_uv_snow).rgb;
+	norm = mix(norm,snow_normals,snow_mask);//add snow
+	norm = mix(norm,snow_normals,smoothstep(0.8,0.9,snow_distribution*snow_amount));
 		
 	lowp float dry_metalic = texture(Material_Metal, uv_mat).x;
 	dry_metalic= mix(dry_metalic,0.0,snow_mask);//add snow
@@ -198,16 +202,15 @@ void fragment()
 	lowp float porosity =clamp((dry_rough-0.5)/0.4,0.0,1.0);
 	lowp float factor = mix(1.0,0.2,(1.0-dry_metalic)*porosity);
 	lowp float wet_rough = 1.0 - mix(1.0,1.0 - dry_rough,mix(1.0,factor,wetness*0.5));//wetness*0.5 in original formula
-	//wet albedo code ends
+	
 	
 	lowp vec3 wet_albedo =saturation(1.0+wetness,dry_albedo);
 	wet_albedo = wet_albedo*mix(1.0,factor,wetness);
 	wet_albedo = mix(dry_albedo,wet_albedo,under_rain);
 	ALBEDO = mix(dry_albedo,wet_albedo,wetness);
-
-	float metalness = mix(dry_metalic,water_metallnes,drops.a);
-	metalness = mix(dry_metalic,water_metallnes,puddles.a);
-	METALLIC = metalness;
+	//wet albedo code ends
+	//float metalness = mix(dry_metalic,water_metallnes,puddles.a);
+	METALLIC = dry_metalic;
 	
 	norm = mix(norm,drops.rgb,drops.a);
 	norm = mix(norm,puddles.rgb,puddles.a);
@@ -217,4 +220,5 @@ void fragment()
 	wet_rough = mix(wet_rough,0.3,puddles.a);
 	wet_rough = mix(wet_rough,wet_rough*0.5,thin_layer_water);
 	ROUGHNESS = mix(dry_rough,wet_rough,under_rain);
+	SPECULAR = puddles.a;
 }
