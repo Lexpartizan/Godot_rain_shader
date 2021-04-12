@@ -1,22 +1,22 @@
 [gd_resource type="ShaderMaterial" load_steps=11 format=2]
 
-[ext_resource path="res://PavingStones090_2K_Roughness.jpg" type="Texture" id=1]
+[ext_resource path="res://Road005_2K_Roughness.jpg" type="Texture" id=1]
 [ext_resource path="res://drops512.png" type="Texture" id=2]
 [ext_resource path="res://ripples512.png" type="Texture" id=3]
 [ext_resource path="res://streaks512.png" type="Texture" id=4]
 [ext_resource path="res://Snow005_2K_Normal.jpg" type="Texture" id=5]
 [ext_resource path="res://rain.shader" type="Shader" id=6]
 [ext_resource path="res://roof_cam.tres" type="Texture" id=7]
-[ext_resource path="res://PavingStones090_2K_Color.jpg" type="Texture" id=8]
+[ext_resource path="res://Road005_2K_Color.jpg" type="Texture" id=8]
 [ext_resource path="res://simple_noise.png" type="Texture" id=9]
-[ext_resource path="res://PavingStones090_2K_Normal.jpg" type="Texture" id=10]
+[ext_resource path="res://Road005_2K_Normal.jpg" type="Texture" id=10]
 
 [resource]
 shader = ExtResource( 6 )
 shader_param/scale_UV_material = 1.0
-shader_param/scale_UV_rain = 3.0
+shader_param/scale_UV_rain = 5.0
 shader_param/cam_heightmap_world_position = Vector3( 0, 20, 0 )
-shader_param/cam_heightmap_size = 30.0
+shader_param/cam_heightmap_size = 1.0
 shader_param/rain = false
 shader_param/wet_level = 0.0
 shader_param/water_metallnes = 0.0
