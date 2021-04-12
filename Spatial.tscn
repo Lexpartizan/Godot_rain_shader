@@ -66,7 +66,7 @@ render_target_update_mode = 3
 gui_snap_controls_to_pixels = false
 script = SubResource( 1 )
 
-[node name="Camera" type="Camera" parent="Viewport"]
+[node name="roof_camera" type="Camera" parent="Viewport"]
 transform = Transform( 1, 0, 0, 0, -1.62921e-07, 1, 0, -1, -1.62921e-07, 0, 20, 0 )
 projection = 1
 current = true
@@ -74,7 +74,7 @@ size = 30.0
 near = 0.01
 far = 30.0
 
-[node name="MeshInstance" type="MeshInstance" parent="Viewport/Camera"]
+[node name="MeshInstance" type="MeshInstance" parent="Viewport/roof_camera"]
 transform = Transform( 1, 0, 0, 0, -1.62921e-07, -1, 0, 1, -1.62921e-07, 0, 0, -0.02 )
 cast_shadow = 0
 mesh = SubResource( 3 )
